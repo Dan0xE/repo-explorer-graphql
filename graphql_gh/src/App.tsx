@@ -19,9 +19,10 @@ function App() {
     const [hasNextPage, setHasNextPage] = React.useState(true);
     const [paginationKeyword, setPaginationKeyword] = React.useState("first");
     const [paginationString, setPaginationString] = React.useState("");
+    const [queryUser, setQueryUser] = React.useState("");
 
     const fetchData = useCallback(() => {
-        const queryText = JSON.stringify(query(pageCount, queryString, paginationKeyword, paginationString));
+        const queryText = JSON.stringify(query(queryUser, pageCount, queryString, paginationKeyword, paginationString));
         fetch(github.baseURL, {
             method: "POST",
             headers: github.headers,
@@ -71,6 +72,12 @@ function App() {
                            onChange={(e) => setQueryString(e.target.value)}/>
                 </div>
                 <div className="col-md-6">
+                    <input type="text" className="form-control" placeholder="User" value={queryUser}
+                           onChange={(e) => setQueryUser(e.target.value)}/>
+                </div>
+                <div className="col-md-6">
+                    <div className="col-md-6">
+                    </div>
                     <select className="form-control" value={pageCount} onChange={(e) => setPageCount(e.target.value)}>
                         <option value="10">10</option>
                         <option value="20">20</option>

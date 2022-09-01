@@ -2,14 +2,14 @@ import query from "./Query";
 
 type pagKey = 'first | last'
 
-const githubQuery = (pageCount: number, queryString: string, paginationKeyword: string, paginationString: string) => {
+const githubQuery = (queryUser: string, pageCount: number, queryString: string, paginationKeyword: string, paginationString: string) => {
     return {
         query: `
          {
   viewer {
     name
   }
-  search(query: "${queryString}user:dan0xe sort:updated-desc", type: REPOSITORY, ${paginationKeyword}: ${pageCount}, ${paginationString}) {
+  search(query: "${queryString}user:${queryUser} sort:updated-desc", type: REPOSITORY, ${paginationKeyword}: ${pageCount}, ${paginationString}) {
     repositoryCount
     edges {
       cursor
