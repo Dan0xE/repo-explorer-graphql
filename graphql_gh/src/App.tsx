@@ -4,16 +4,24 @@ import {useEffect, useCallback} from "react";
 import githubQuery from "./utils/Query";
 import clsx from "clsx";
 import query from "./utils/Query";
+import RepoInfo from "./RepoInfo";
+import NavButtons from "./NavButtons";
 
 function App() {
     const [userName, setUserName] = React.useState(null);
     const [repoList, setRepoList] = React.useState(null);
     const [pageCount, setPageCount] = React.useState<SetStateAction<any> | number>(10);
-    const [queryString, setQueryString] = React.useState("slides");
+    const [queryString, setQueryString] = React.useState("");
     const [totalCount, setTotalCount] = React.useState(0);
+    const [startCursor, setStartCursor] = React.useState(null);
+    const [endCursor, setEndCursor] = React.useState(null);
+    const [hasPreviousPage, setHasPreviousPage] = React.useState(false);
+    const [hasNextPage, setHasNextPage] = React.useState(true);
+    const [paginationKeyword, setPaginationKeyword] = React.useState("first");
+    const [paginationString, setPaginationString] = React.useState("");
 
     const fetchData = useCallback(() => {
-        const queryText = JSON.stringify(query(pageCount, queryString));
+        const queryText = JSON.stringify(query(pageCount, queryString, paginationKeyword, paginationString));
         fetch(github.baseURL, {
             method: "POST",
             headers: github.headers,
@@ -22,15 +30,25 @@ function App() {
             .then((res) => res.json())
             .then((data) => {
                 const viewer = data.data.viewer;
-                const repos = data.data.search.nodes
+                const repos = data.data.search.edges
                 const total = data.data.search.repositoryCount;
+                const start = data.data.search.pageInfo?.startCursor;
+                const end = data.data.search.pageInfo?.endCursor;
+                const prev = data.data.search.pageInfo?.hasPreviousPage;
+                const next = data.data.search.pageInfo?.hasNextPage;
+                const pagination = data.data.search.pageInfo?.endCursor;
+
+                setStartCursor(start);
+                setEndCursor(end);
+                setHasPreviousPage(prev);
+                setHasNextPage(next);
                 setTotalCount(total)
                 setUserName(viewer.name);
                 setRepoList(repos);
                 console.log(data)
             })
             .catch((err) => console.log(err));
-    }, [pageCount, queryString]);
+    }, [pageCount, queryString, paginationKeyword, paginationString]);
 
     useEffect(() => {
         fetchData();
@@ -49,7 +67,8 @@ function App() {
             </p>
             <div className="row">
                 <div className="col-md-6">
-                    <input type="text" className="form-control" placeholder="Search" value={queryString} onChange={(e) => setQueryString(e.target.value)}/>
+                    <input type="text" className="form-control" placeholder="Search" value={queryString}
+                           onChange={(e) => setQueryString(e.target.value)}/>
                 </div>
                 <div className="col-md-6">
                     <select className="form-control" value={pageCount} onChange={(e) => setPageCount(e.target.value)}>
@@ -72,39 +91,21 @@ function App() {
             <div className="row">
                 {/*@ts-ignore*/}
                 {repoList && repoList.map((repo: any) => (
-                    <div className="col-md-4" key={repo.id}>
-                        <div className="card mb-4 shadow-sm">
-                            <div className="card-body">
-                                <h5 className="card-title">{repo.name}</h5>
-                                <p className={clsx(repo.licenseInfo?.spdxId === undefined ? `card-text badge bg-danger` : `card-text badge bg-success`)}>{repo.licenseInfo?.spdxId === undefined ? "License not found or unknown" : `Licensed under ${repo.licenseInfo?.spdxId}`}</p>
-                                <p className="card-text">{repo.description}</p>
-
-                                <div className="d-flex justify-content-between align-items-center">
-                                    <div className="btn-group">
-                                        <button type="button" className="btn btn-sm btn-outline-secondary"
-                                                onClick={() => window.open(repo.url, "_blank")}>
-                                            View
-                                        </button>
-                                        <button type="button" className="btn btn-sm btn-outline-secondary"
-                                                onClick={() => window.open(repo.url + "/issues", "_blank")}>
-                                            Edit
-                                        </button>
-                                        {repo.viewerSubscription === "SUBSCRIBED" ? (
-                                            <span
-                                                className="badge mt-1 m-lg-2 h-25 bg-primary">{repo.viewerSubscription}</span>
-                                        ) : (
-                                            <button
-                                                onClick={() => window.open(repo.url + "/subscription", "_blank")}
-                                                type="button"
-                                                className="btn btn-sm btn-outline-primary">Subscribe</button>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div className="col-md-4" key={repo.node.id}>
+                        <RepoInfo repo={repo.node}/>
                     </div>)
                 )}
             </div>
+            <NavButtons
+                start={startCursor}
+                end={endCursor}
+                next={hasNextPage}
+                previous={hasPreviousPage}
+                onPage={(keyword: any, string: any) => {
+                    setPaginationKeyword(keyword);
+                    setPaginationString(string);
+                }}
+            />
         </div>
     );
 }
